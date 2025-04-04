@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace CyberSecurityChatBotAI
@@ -6,7 +7,7 @@ namespace CyberSecurityChatBotAI
     // Handles user questions and responses
     public class QuestionHandler
     {
-        private Dictionary<string, string> responses = new Dictionary<string, string>();
+        private ArrayList responses = new ArrayList();
 
         public QuestionHandler()
         {
@@ -29,11 +30,18 @@ namespace CyberSecurityChatBotAI
                     return;
                 }
 
-                if (responses.ContainsKey(question))
+                bool found = false;
+                foreach (DictionaryEntry entry in responses)
                 {
-                    Console.WriteLine("Chat AI -> " + responses[question]);
+                    if ((string)entry.Key == question)
+                    {
+                        Console.WriteLine("Chat AI -> " + entry.Value);
+                        found = true;
+                        break;
+                    }
                 }
-                else
+
+                if (!found)
                 {
                     Console.WriteLine("Chat AI-> I couldn't find an answer. Try rephrasing your question.");
                 }
@@ -42,18 +50,17 @@ namespace CyberSecurityChatBotAI
 
         private void StoreReplies()
         {
-            responses["how are you"] = "I'm just a bot, but I'm running smoothly!";
-            responses["what is your purpose"] = "I provide cybersecurity knowledge to help keep you safe online.";
-            responses["password safety"] = "Use long, unique passwords and a password manager!";
-            responses["phishing"] = "Beware of emails or messages asking for personal information. Always verify the sender.";
-            responses["safe browsing"] = "Use secure websites (HTTPS) and avoid downloading from unknown sources.";
-            responses["firewall"] = "Firewalls help block unauthorized access to your network.";
-            responses["vpn"] = "A VPN encrypts your internet traffic, keeping your online activity private.";
-            responses["encryption"] = "Encryption helps protect your sensitive data from unauthorized access.";
-            responses["ransomware"] = "Never open suspicious attachments, and always back up your important files.";
-            responses["antivirus"] = "Keep your antivirus software updated to protect against threats.";
-
-            responses["Spoofing"] = "avoid talking to people you dont know especially online and about your personal information";
+            responses.Add(new DictionaryEntry("how are you", "I'm just a bot, but I'm running smoothly!"));
+            responses.Add(new DictionaryEntry("what is your purpose", "I provide cybersecurity knowledge to help keep you safe online."));
+            responses.Add(new DictionaryEntry("password safety", "Use long, unique passwords and a password manager!"));
+            responses.Add(new DictionaryEntry("phishing", "Beware of emails or messages asking for personal information. Always verify the sender."));
+            responses.Add(new DictionaryEntry("safe browsing", "Use secure websites (HTTPS) and avoid downloading from unknown sources."));
+            responses.Add(new DictionaryEntry("firewall", "Firewalls help block unauthorized access to your network."));
+            responses.Add(new DictionaryEntry("vpn", "A VPN encrypts your internet traffic, keeping your online activity private."));
+            responses.Add(new DictionaryEntry("encryption", "Encryption helps protect your sensitive data from unauthorized access."));
+            responses.Add(new DictionaryEntry("ransomware", "Never open suspicious attachments, and always back up your important files."));
+            responses.Add(new DictionaryEntry("antivirus", "Keep your antivirus software updated to protect against threats."));
+            responses.Add(new DictionaryEntry("spoofing", "Avoid talking to people you don't know, especially online and about your personal information."));
         }
     }
 }
