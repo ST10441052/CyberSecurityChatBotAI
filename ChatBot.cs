@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 
 namespace CyberSecurityChatBotAI
 {
@@ -17,12 +18,21 @@ namespace CyberSecurityChatBotAI
 
         public void Run()
         {
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            ShowLoading();
-            mediaHandler.DisplayLogo();
-            mediaHandler.PlayWelcomeAudio();
-            WelcomeUser();
-            Menu();
+            try
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                ShowLoading();
+                mediaHandler.DisplayLogo();
+                mediaHandler.PlayWelcomeAudio();
+                WelcomeUser();
+                Menu();
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("An unexpected error occurred: " + ex.Message);
+                Console.ResetColor();
+            }
         }
 
         private void ShowLoading(int seconds = 3)
@@ -45,6 +55,14 @@ namespace CyberSecurityChatBotAI
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("User-> ");
             name = Console.ReadLine();
+            while (string.IsNullOrWhiteSpace(name) || Regex.IsMatch(name, @"\d"))
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Invalid input! Name cannot be empty or contain numbers. Please enter a valid name:");
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.Write("User-> ");
+                name = Console.ReadLine();
+            }
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("\n===================================================================================================");
             Console.WriteLine("Chat AI-> Well hello there: " + name);
@@ -63,7 +81,6 @@ namespace CyberSecurityChatBotAI
                 string answer = Console.ReadLine()?.ToLower();
                 Console.ForegroundColor = ConsoleColor.Cyan;
 
-                //used a case here instead of using a do while loop to have an eaaier user interaction 
                 switch (answer)
                 {
                     case "yes":
@@ -75,9 +92,11 @@ namespace CyberSecurityChatBotAI
                         Console.WriteLine("===================================================================================================");
                         return;
                     default:
+                        Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("\n===================================================================================================");
                         Console.WriteLine("Invalid input! Please enter 'yes' or 'no'.");
                         Console.WriteLine("===================================================================================================");
+                        Console.ForegroundColor = ConsoleColor.Cyan;
                         break;
                 }
             }
