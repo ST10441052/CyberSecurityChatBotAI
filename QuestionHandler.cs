@@ -11,73 +11,81 @@ namespace CyberSecurityChatBotAI
     {
         private ArrayList singleResponses = new ArrayList();
         private Dictionary<string, List<string>> keywordResponses = new Dictionary<string, List<string>>();
-        private Dictionary<string, string> clarificationResponses = new Dictionary<string, string>();
+        private Dictionary<string, Dictionary<string, string>> sentimentalResponses = new Dictionary<string, Dictionary<string, string>>();
         private Random random = new Random();
-        private string currentTopic = null; // so this is what tracks the current topic
-        private Memory memory; // this is a Memory instance for me to store the  user details
+        private string currentTopic = null; // Tracks the current topic
+        private Memory memory; // Memory instance to store user details
 
-        //Constrructor that I use to initialize the memory instance
         public QuestionHandler(Memory memory)
         {
             this.memory = memory;
             StoreReplies();
         }
-        // This method handles user questions and provides responses based on keywords or single responses.
+        /// Handles user questions and provides responses
         public void HandleQuestions()
         {
             while (true)
             {
-                Console.WriteLine($"Chat AI-> {memory.UserName}, enter your question (or 'exit' to go back to the main menu):");
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.Write($"{memory.UserName} -> ");
-                string question = Console.ReadLine()?.ToLower();
-                Console.ForegroundColor = ConsoleColor.Cyan;
-
-                if (question == "exit")
+                try
                 {
-                    Console.WriteLine($"Goodbye, {memory.UserName}! Feel free to come back anytime.");
-                    return;
-                }
-
-                // Handle follow-up questions or confusion
-                if (IsFollowUpQuestion(question))
-                {
-                    HandleFollowUp();
-                    continue;
-                }
-
-                // Check for exact match in single responses
-                string singleResponse = GetSingleResponse(question);
-                if (singleResponse != null)
-                {
-                    Console.WriteLine($"Chat AI -> {singleResponse}");
-                    currentTopic = null; // Reset topic for general questions
-                    continue;
-                }
-
-                // Check for keyword match with random response
-                string randomResponse = GetRandomKeywordResponse(question);
-                if (randomResponse != null)
-                {
-                    Console.WriteLine($"Chat AI -> {randomResponse}");
-                    currentTopic = GetKeywordFromInput(question); // Update current topic
-                    continue;
-                }
-
-                // Ask for favorite topic if not set
-                if (memory.FavoriteTopic == null)
-                {
-                    Console.WriteLine("Chat AI -> By the way, do you have a favorite cybersecurity topic? (e.g., phishing, password safety)");
+                    Console.WriteLine($"Chat AI-> {memory.UserName}, enter your question (or 'exit' to go back to the main menu):");
                     Console.ForegroundColor = ConsoleColor.White;
                     Console.Write($"{memory.UserName} -> ");
-                    memory.FavoriteTopic = Console.ReadLine()?.ToLower();
+                    string question = Console.ReadLine()?.ToLower();
                     Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.WriteLine($"Chat AI -> Got it! I'll remember that your favorite topic is {memory.FavoriteTopic}.");
-                    continue;
-                }
 
-                // Default response if no match is found
-                Console.WriteLine("Chat AI-> I couldn't find an answer. Try rephrasing your question.");
+                    // Check for empty input
+                    if (string.IsNullOrWhiteSpace(question))
+                    {
+                        Console.WriteLine("Chat AI -> It seems you didn't enter anything. Could you try again?");
+                        continue;
+                    }
+
+                    if (question == "exit")
+                    {
+                        Console.WriteLine($"Goodbye, {memory.UserName}! Feel free to come back anytime.");
+                        return;
+                    }
+
+                    // Detect sentiment in the user's input
+                    string sentiment = DetectSentiment(question);
+
+                    // Check for keyword match with sentimental response
+                    string sentimentalResponse = GetSentimentalResponse(question, sentiment);
+                    if (sentimentalResponse != null)
+                    {
+                        Console.WriteLine($"Chat AI -> {sentimentalResponse}");
+                        currentTopic = GetKeywordFromInput(question); // Update current topic
+                        continue;
+                    }
+
+                    // Check for exact match in single responses
+                    string singleResponse = GetSingleResponse(question);
+                    if (singleResponse != null)
+                    {
+                        Console.WriteLine($"Chat AI -> {singleResponse}");
+                        currentTopic = null; // Reset topic for general questions
+                        continue;
+                    }
+
+                    // Check for keyword match with random response
+                    string randomResponse = GetRandomKeywordResponse(question);
+                    if (randomResponse != null)
+                    {
+                        Console.WriteLine($"Chat AI -> {randomResponse}");
+                        currentTopic = GetKeywordFromInput(question); // Update current topic
+                        continue;
+                    }
+
+                    // Default response for unknown inputs
+                    Console.WriteLine("Chat AI -> I'm not sure I understand. Can you try rephrasing?");
+                }
+                catch (Exception ex)
+                {
+                    // Log the error (optional) and provide a user-friendly message
+                    Console.WriteLine("Chat AI -> Oops! Something went wrong. Please try again.");
+                    Console.WriteLine($"[Error Details: {ex.Message}]"); // For debugging purposes (can be removed in production)
+                }
             }
         }
 
@@ -88,31 +96,13 @@ namespace CyberSecurityChatBotAI
             singleResponses.Add(new DictionaryEntry("what is your purpose", "I provide cybersecurity knowledge to help keep you safe online."));
 
             // Add keyword responses
-            keywordResponses["safe browsing"] = new List<string>
+            keywordResponses["spoofing"] = new List<string>
             {
-                "Use secure websites (HTTPS) and avoid downloading from unknown sources.",
-                "Keep your browser updated to the latest version.",
-                "Avoid clicking on pop-ups or suspicious ads.",
-                "Use browser extensions that enhance security, like ad blockers.",
-                "Clear your browser cache and cookies regularly."
-            };
-
-            keywordResponses["encryption"] = new List<string>
-            {
-                "Encryption helps protect your sensitive data from unauthorized access.",
-                "Always use encrypted communication channels like HTTPS or VPNs.",
-                "Encrypt sensitive files before sharing them online.",
-                "Use end-to-end encryption for messaging apps.",
-                "Ensure your Wi-Fi network is encrypted with WPA3 or WPA2."
-            };
-
-            keywordResponses["phishing"] = new List<string>
-            {
-                "Beware of emails or messages asking for personal information. Always verify the sender.",
-                "Never click on suspicious links or download unknown attachments.",
-                "Look for spelling errors or generic greetings in phishing emails.",
-                "Enable two-factor authentication to protect your accounts.",
-                "Report phishing attempts to your email provider or IT department."
+                "Avoid talking to people you don't know, especially online.",
+                "Verify the identity of the person contacting you before sharing information.",
+                "Be cautious of emails or calls claiming to be from trusted organizations.",
+                "Check email headers to identify spoofed email addresses.",
+                "Use anti-spoofing tools or software to protect your devices."
             };
 
             keywordResponses["password safety"] = new List<string>
@@ -124,24 +114,54 @@ namespace CyberSecurityChatBotAI
                 "Never share your passwords with anyone."
             };
 
-            keywordResponses["spoofing"] = new List<string>
+            keywordResponses["phishing"] = new List<string>
             {
-                "Avoid talking to people you don't know, especially online.",
-                "Verify the identity of the person contacting you before sharing information.",
-                "Be cautious of emails or calls claiming to be from trusted organizations.",
-                "Check email headers to identify spoofed email addresses.",
-                "Use anti-spoofing tools or software to protect your devices."
+                "Beware of emails or messages asking for personal information. Always verify the sender.",
+                "Never click on suspicious links or download unknown attachments.",
+                "Look for spelling errors or generic greetings in phishing emails.",
+                "Enable two-factor authentication to protect your accounts.",
+                "Report phishing attempts to your email provider or IT department."
             };
 
-            // Add clarification responses for each topic
-            clarificationResponses["safe browsing"] = "Safe browsing means using secure websites and avoiding risky online behavior. Would you like more tips?";
-            clarificationResponses["encryption"] = "Encryption scrambles your data to protect it from unauthorized access. Do you need more details?";
-            clarificationResponses["phishing"] = "Phishing is a scam where attackers trick you into giving personal information. Should I explain further?";
-            clarificationResponses["password safety"] = "Password safety involves using strong, unique passwords for each account. Want to know more?";
-            clarificationResponses["spoofing"] = "Spoofing is when someone pretends to be someone else to gain your trust. Need more clarification?";
+            keywordResponses["encryption"] = new List<string>
+            {
+                "Encryption helps protect your sensitive data from unauthorized access.",
+                "Always use encrypted communication channels like HTTPS or VPNs.",
+                "Encrypt sensitive files before sharing them online.",
+                "Use end-to-end encryption for messaging apps.",
+                "Ensure your Wi-Fi network is encrypted with WPA3 or WPA2."
+            };
+
+            // Add sentimental responses for each keyword
+            sentimentalResponses["spoofing"] = new Dictionary<string, string>
+            {
+                { "worried", "It's okay to feel worried about spoofing. Let me guide you on how to identify and avoid spoofing attempts." },
+                { "unsure", "If you're unsure about spoofing, it's when someone pretends to be someone else to gain your trust. Let me explain further." },
+                { "overwhelmed", "Spoofing can feel overwhelming, but don't worry. Start by verifying the identity of anyone contacting you." }
+            };
+
+            sentimentalResponses["password safety"] = new Dictionary<string, string>
+            {
+                { "worried", "It's okay to feel worried about password safety. Let me guide you on creating strong, unique passwords for each account." },
+                { "unsure", "If you're unsure about password safety, it involves using strong, unique passwords and enabling two-factor authentication. Let me explain more." },
+                { "overwhelmed", "Password safety can seem overwhelming, but it's manageable. Start with a password manager to simplify the process." }
+            };
+
+            sentimentalResponses["phishing"] = new Dictionary<string, string>
+            {
+                { "worried", "It's completely understandable to feel worried about phishing. Scammers can be very convincing. Let me share some tips to help you stay safe." },
+                { "unsure", "If you're unsure about phishing, it's when attackers try to trick you into giving personal information. Let me explain further." },
+                { "overwhelmed", "I know phishing can feel overwhelming. Take it one step at a time. Start by verifying the sender of emails and avoiding suspicious links." }
+            };
+
+            sentimentalResponses["encryption"] = new Dictionary<string, string>
+            {
+                { "worried", "It's okay to feel worried about encryption. Let me explain how it protects your sensitive data from unauthorized access." },
+                { "unsure", "If you're unsure about encryption, it's a way to scramble your data so only authorized parties can read it. Let me explain more." },
+                { "overwhelmed", "Encryption can seem overwhelming, but it's essential for security. Start by using encrypted communication channels like HTTPS or VPNs." }
+            };
         }
 
-        // This method checks if the input matches any of the single responses and returns the first one found.
         private string GetSingleResponse(string input)
         {
             foreach (DictionaryEntry entry in singleResponses)
@@ -153,7 +173,7 @@ namespace CyberSecurityChatBotAI
             }
             return null;
         }
-        // This method checks if the input contains any of the keywords and returns a random response from the list.
+
         private string GetRandomKeywordResponse(string input)
         {
             foreach (var keyword in keywordResponses.Keys)
@@ -166,7 +186,7 @@ namespace CyberSecurityChatBotAI
             }
             return null;
         }
-        // This method checks if the input contains any of the keywords and returns the first one found.
+
         private string GetKeywordFromInput(string input)
         {
             foreach (var keyword in keywordResponses.Keys)
@@ -178,32 +198,36 @@ namespace CyberSecurityChatBotAI
             }
             return null;
         }
-        // This method checks if the input is a follow-up question or indicates confusion.
 
-        private bool IsFollowUpQuestion(string input)
+        private string DetectSentiment(string input)
         {
-            return input.Contains("more") || input.Contains("explain") || input.Contains("details") || input.Contains("i don't understand");
+            if (input.Contains("worried") || input.Contains("scared") || input.Contains("anxious"))
+            {
+                return "worried";
+            }
+            if (input.Contains("unsure") || input.Contains("confused") || input.Contains("uncertain"))
+            {
+                return "unsure";
+            }
+            if (input.Contains("overwhelmed") || input.Contains("stressed") || input.Contains("frustrated"))
+            {
+                return "overwhelmed";
+            }
+            return null;
         }
 
-        // This method handles follow-up questions or confusion.
-        private void HandleFollowUp()
+        private string GetSentimentalResponse(string input, string sentiment)
         {
-            if (currentTopic != null)
+            string keyword = GetKeywordFromInput(input);
+            if (keyword != null && sentiment != null && sentimentalResponses.ContainsKey(keyword))
             {
-                if (keywordResponses.ContainsKey(currentTopic))
+                var responses = sentimentalResponses[keyword];
+                if (responses.ContainsKey(sentiment))
                 {
-                    var possibleResponses = keywordResponses[currentTopic];
-                    Console.WriteLine($"Chat AI -> {possibleResponses[random.Next(possibleResponses.Count)]}");
-                }
-                else if (clarificationResponses.ContainsKey(currentTopic))
-                {
-                    Console.WriteLine($"Chat AI -> {clarificationResponses[currentTopic]}");
+                    return responses[sentiment];
                 }
             }
-            else
-            {
-                Console.WriteLine("Chat AI -> I'm not sure what you're referring to. Could you clarify?");
-            }
+            return null;
         }
     }
 
