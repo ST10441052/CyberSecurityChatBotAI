@@ -9,11 +9,13 @@ namespace CyberSecurityChatBotAI
         private string name;
         private AudioImageHandler mediaHandler;
         private QuestionHandler questionHandler;
+        private Memory memory;
 
         public ChatBot()
         {
+            memory = new Memory(); // Initialize Memory
             mediaHandler = new AudioImageHandler();
-            questionHandler = new QuestionHandler();
+            questionHandler = new QuestionHandler(memory); // Pass memory to QuestionHandler
         }
 
         public void Run()
@@ -63,12 +65,14 @@ namespace CyberSecurityChatBotAI
                 Console.Write("User-> ");
                 name = Console.ReadLine();
             }
+            memory.UserName = name; // Set the name in memory
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("\n===================================================================================================");
             Console.WriteLine("Chat AI-> Well hello there: " + name);
             Console.WriteLine("===================================================================================================");
         }
 
+        // Update the Menu method to call HandleQuestions without arguments
         private void Menu()
         {
             while (true)
@@ -84,7 +88,7 @@ namespace CyberSecurityChatBotAI
                 switch (answer)
                 {
                     case "yes":
-                        questionHandler.HandleQuestions(name);
+                        questionHandler.HandleQuestions();
                         break;
                     case "no":
                         Console.WriteLine("\n===================================================================================================");
