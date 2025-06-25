@@ -3,107 +3,137 @@ using System.Text.RegularExpressions;
 
 namespace CyberSecurityChatBotAI
 {
-    // Handles user interaction and chatbot operation
+    // Updated ChatBot class for GUI integration  
     public class ChatBot
     {
         private string name;
-        private AudioImageHandler mediaHandler;
+        private string userName;
+        //private AudioImageHandler mediaHandler;
         private QuestionHandler questionHandler;
         private Memory memory;
 
-        public ChatBot()
+        public ChatBot(string botName = "CyberBot")
         {
-            memory = new Memory(); // Initialize Memory
-            mediaHandler = new AudioImageHandler();
-            questionHandler = new QuestionHandler(memory); // Pass memory to QuestionHandler
+            name = botName;
+           // mediaHandler = new AudioImageHandler();
+            memory = new Memory();
+            questionHandler = new QuestionHandler(memory); // Pass 'memory' to the QuestionHandler constructor  
         }
 
-        public void Run()
+        public string ProcessMessage(string userInput)
         {
-            try
+            if (string.IsNullOrWhiteSpace(userInput))
+                return "I didn't receive any input. Please ask me something about cybersecurity!";
+
+            // Store user input and get response  
+            string response = questionHandler.GetResponse(userInput);
+
+            // Record conversation in memory  
+            if (!string.IsNullOrWhiteSpace(userName))
             {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                ShowLoading();
-                mediaHandler.DisplayLogo();
-                mediaHandler.PlayWelcomeAudio();
-                WelcomeUser();
-                Menu();
+                memory.UserName = userName;
+                memory.RecordConversation(userInput, response);
             }
-            catch (Exception ex)
+
+            return response;
+        }
+
+        public void SetUserName(string name)
+        {
+            if (!string.IsNullOrWhiteSpace(name))
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("An unexpected error occurred: " + ex.Message);
-                Console.ResetColor();
+                userName = name.Trim();
+                memory.UserName = userName;
+
+                // Store in memory for personalization  
+                memory.SetDetail("UserName", userName);
+                memory.SetDetail("FirstContact", DateTime.Now.ToString());
             }
         }
 
-        private void ShowLoading(int seconds = 3)
+        public string GetUserName()
         {
-            Console.Write("\n Starting up chatbot AI");
-            for (int i = 0; i < seconds; i++)
-            {
-                Console.Write(".");
-                System.Threading.Thread.Sleep(1000);
-            }
-            Console.WriteLine();
+            return userName ?? "User";
         }
 
-        private void WelcomeUser()
+        public void SetUserFavoriteTopic(string topic)
         {
-            Console.WriteLine("\n===================================================================================================");
-            Console.WriteLine("CHAT AI-> Hello! Welcome to the Cybersecurity Awareness Bot. I'm here to help you stay safe online.");
-            Console.WriteLine("===================================================================================================");
-            Console.WriteLine("Chat AI-> Please enter your full name:");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.Write("User-> ");
-            name = Console.ReadLine();
-            while (string.IsNullOrWhiteSpace(name) || Regex.IsMatch(name, @"\d"))
+            if (!string.IsNullOrWhiteSpace(topic))
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Invalid input! Name cannot be empty or contain numbers. Please enter a valid name:");
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.Write("User-> ");
-                name = Console.ReadLine();
+                memory.FavoriteTopic = topic.Trim();
+                memory.SetDetail("FavoriteTopic", topic.Trim());
             }
-            memory.UserName = name; // Set the name in memory
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("\n===================================================================================================");
-            Console.WriteLine("Chat AI-> Well hello there: " + name);
-            Console.WriteLine("===================================================================================================");
         }
 
-        // Update the Menu method to call HandleQuestions without arguments
-        private void Menu()
+        public string GetUserFavoriteTopic()
         {
-            while (true)
-            {
-                Console.WriteLine("\n===================================================================================================");
-                Console.WriteLine("Chat AI-> Would you like to ask any questions? (yes/no)");
-                Console.WriteLine("===================================================================================================");
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.Write(name + "-> ");
-                string answer = Console.ReadLine()?.ToLower();
-                Console.ForegroundColor = ConsoleColor.Cyan;
+            return memory.FavoriteTopic ?? "General Cybersecurity";
+        }
 
-                switch (answer)
+
+        public string GetConversationHistory()
+        {
+            return memory.GetConversationHistory();
+        }
+
+        public Memory GetMemory()
+        {
+            return memory;
+        }
+
+        public string GetPersonalizedGreeting()
+        {
+            if (string.IsNullOrWhiteSpace(userName))
+                return "Hello! I'm your cybersecurity assistant. What would you like to know?";
+
+            string greeting = $"Hello {userName}! ";
+
+            // Add personalized content based on memory  
+            string favTopic = GetUserFavoriteTopic();
+            if (favTopic != "General Cybersecurity")
+            {
+                greeting += $"Ready to discuss more about {favTopic}? ";
+            }
+
+            greeting += "How can I help you stay secure today?";
+            return greeting;
+        }
+
+        public string GetTaskRelatedResponse(string input)
+        {
+            string lowerInput = input.ToLower();
+
+            if (lowerInput.Contains("task") || lowerInput.Contains("reminder") || lowerInput.Contains("todo"))
+            {
+                return "I see you're interested in task management! You can use the task panel to add cybersecurity-related tasks with reminders. This helps you stay on top of important security practices!";
+            }
+
+            return ProcessMessage(input);
+        }
+
+        // Method to get contextual responses based on conversation history  
+        public string GetContextualResponse(string userInput)
+        {
+            string response = questionHandler.GetResponse(userInput);
+
+            // Add personal touches if we know the user  
+            if (!string.IsNullOrWhiteSpace(userName))
+            {
+                // Add user's name occasionally for personalization  
+                Random rand = new Random();
+                if (rand.Next(1, 4) == 1) // 33% chance  
                 {
-                    case "yes":
-                        questionHandler.HandleQuestions();
-                        break;
-                    case "no":
-                        Console.WriteLine("\n===================================================================================================");
-                        Console.WriteLine("That's a shame. Feel free to come back if you have questions.");
-                        Console.WriteLine("===================================================================================================");
-                        return;
-                    default:
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("\n===================================================================================================");
-                        Console.WriteLine("Invalid input! Please enter 'yes' or 'no'.");
-                        Console.WriteLine("===================================================================================================");
-                        Console.ForegroundColor = ConsoleColor.Cyan;
-                        break;
+                    response = response.Replace("you", userName).Replace("You", userName);
                 }
             }
+
+            return response;
+        }
+
+        // Get bot statistics for display  
+        public string GetBotStats()
+        {
+            return $"Bot Name: {name}\nUser: {GetUserName()}\nFavorite Topic: {GetUserFavoriteTopic()}";
         }
     }
 }
